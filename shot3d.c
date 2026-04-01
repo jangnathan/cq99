@@ -51,8 +51,9 @@ typedef struct {
 	float speed;
 } Entity;
 
-uint8_t is_colliding_walls(float x, float y) {
-	return 0;
+uint8_t colliding_type(float x, float y) {
+	uint16_t gridIdx = (uint16_t)(x / TOPDOWN_PX_SIZE) + (uint16_t)(y / TOPDOWN_PX_SIZE) * MAP_WIDTH;
+	return map[gridIdx];
 }
 
 int main() {
@@ -109,35 +110,21 @@ int main() {
 		player.speed -= player.speed * 30.0f * deltaTime;
 
 		player.x += cos(player.dir) * player.speed * deltaTime * 20.0f;
+		if (colliding_type(player.x, player.y) == 1) {
+			player.x -= cos(player.dir) * player.speed * deltaTime * 20.0f;
+		}
 		player.y += sin(player.dir) * player.speed * deltaTime * 20.0f;
-
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-		SDL_RenderClear(renderer);
-
-		// render map
-		SDL_Rect mapstamp;
-		mapstamp.w = TOPDOWN_PX_SIZE;
-		mapstamp.h = TOPDOWN_PX_SIZE;
-		// render 2d map
-		for (uint16_t i = 0; i < MAP_WIDTH * MAP_HEIGHT; i++) {
-			mapstamp.x = (i % MAP_WIDTH) * TOPDOWN_PX_SIZE;
-			mapstamp.y = (i / MAP_WIDTH) * TOPDOWN_PX_SIZE;
-
-			if (map[i] == 1) {
-				SDL_SetRenderDrawColor(renderer, WALL_COLOR);
-			} else if (map[i] == 0) {
-				continue;
-			}
-			SDL_RenderFillRect(renderer, &mapstamp);
+		if (colliding_type(player.x, player.y) == 1) {
+			player.y -= sin(player.dir) * player.speed * deltaTime * 20.0f;
 		}
 
-		// render the player
-		SDL_Vertex vertices[3] = {
-			{{player.x + cos(player.dir) * TOPDOWN_PX_SIZE, player.y + sin(player.dir) * TOPDOWN_PX_SIZE}, PLAYER_COLOR, {1, 1}},
-			{{player.x + cos(player.dir + 1.6) * TOPDOWN_PX_SIZE, player.y + sin(player.dir + 1.6) * TOPDOWN_PX_SIZE}, PLAYER_COLOR, {1, 1}},
-			{{player.x + cos(player.dir - 1.6) * TOPDOWN_PX_SIZE, player.y + sin(player.dir - 1.6) * TOPDOWN_PX_SIZE}, PLAYER_COLOR, {1, 1}},
-		};
-		SDL_RenderGeometry(renderer, 0, vertices, 3, 0, 0);
+		SDL_RenderClear(renderer);
+		SDL_Rect floor = {0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2}; 
+		SDL_Rect sky = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT / 2}; 
+		SDL_SetRenderDrawColor(renderer, 50, 150, 50, 255);
+		SDL_RenderFillRect(renderer, &floor);
+		SDL_SetRenderDrawColor(renderer, 50, 50, 150, 255);
+		SDL_RenderFillRect(renderer, &sky);
 
 		// render raycast lines
 		for (uint16_t x = 0; x < NUM_RAYS; x++) {
@@ -153,8 +140,7 @@ int main() {
 				eyeY = player.y + sin(rayAngle) * dist;
 				dist = dist + 0.1;
 
-				uint16_t gridIdx = (uint16_t)(eyeX / TOPDOWN_PX_SIZE) + (uint16_t)(eyeY / TOPDOWN_PX_SIZE) * MAP_WIDTH;
-				if (map[gridIdx] == 1) {
+				if (colliding_type(eyeX, eyeY) == 1) {
 					hit_wall = 1;
 					if (show_lines) {
 						SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
@@ -181,6 +167,41 @@ int main() {
 				}
 			}
 		}
+		
+		// render gui and things here
+
+		// render map
+		SDL_Rect mapstamp;
+		mapstamp.w = TOPDOWN_PX_SIZE;
+		mapstamp.h = TOPDOWN_PX_SIZE;
+		// render the player
+		SDL_Vertex vertices[3] = {
+			{{player.x + cos(player.dir) * TOPDOWN_PX_SIZE, player.y + sin(player.dir) * TOPDOWN_PX_SIZE}, PLAYER_COLOR, {1, 1}},
+			{{player.x + cos(player.dir + 1.6) * TOPDOWN_PX_SIZE, player.y + sin(player.dir + 1.6) * TOPDOWN_PX_SIZE}, PLAYER_COLOR, {1, 1}},
+			{{player.x + cos(player.dir - 1.6) * TOPDOWN_PX_SIZE, player.y + sin(player.dir - 1.6) * TOPDOWN_PX_SIZE}, PLAYER_COLOR, {1, 1}},
+		};
+		SDL_RenderGeometry(renderer, 0, vertices, 3, 0, 0);
+		// render 2d map
+		for (uint16_t i = 0; i < MAP_WIDTH * MAP_HEIGHT; i++) {
+			mapstamp.x = (i % MAP_WIDTH) * TOPDOWN_PX_SIZE;
+			mapstamp.y = (i / MAP_WIDTH) * TOPDOWN_PX_SIZE;
+
+			if (map[i] == 1) {
+				SDL_SetRenderDrawColor(renderer, WALL_COLOR);
+			} else if (map[i] == 0) {
+				continue;
+			}
+			SDL_RenderFillRect(renderer, &mapstamp);
+		}
+
+		// render a gun
+		SDL_SetRenderDrawColor(renderer, 20, 20, 20, 255);
+		SDL_Rect barrel = {SCREEN_WIDTH / 2 - 15, SCREEN_HEIGHT - 60, 30, 30};
+		SDL_Rect sights1 = {SCREEN_WIDTH / 2 - 20, SCREEN_HEIGHT - 90, 5, 50};
+		SDL_Rect sights2 = {SCREEN_WIDTH / 2 + 15, SCREEN_HEIGHT - 90, 5, 50};
+		SDL_RenderFillRect(renderer, &barrel);
+		SDL_RenderFillRect(renderer, &sights1);
+		SDL_RenderFillRect(renderer, &sights2);
 
 		SDL_RenderPresent(renderer);
 	}
