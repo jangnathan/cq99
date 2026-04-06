@@ -1,11 +1,13 @@
 #include <stdio.h>
 
 void bubble(int *in, int len) {
-	for (int i = 0; i < len - 1; i++) {
-		if (in[i] > in[i + 1]) {
-			int temp = in[i];
-			in[i] = in[i + 1];
-			in[i + 1] = temp;
+	for (int x = 0; x < len; x++) {
+		for (int i = 0; i < len - x - 1; i++) {
+			if (in[i] > in[i + 1]) {
+				int temp = in[i];
+				in[i] = in[i + 1];
+				in[i + 1] = temp;
+			}
 		}
 	}
 }
@@ -18,7 +20,7 @@ void print_int_array(int *nums, int len) {
 }
 
 int main() {
-	int nums[] = {0, 5, 2, 9, 6, 10};
+	int nums[] = {0, 5, 2, 9, 6, 10, 1, 1, 3};
 
 	int len = sizeof(nums) / sizeof(int);
 	bubble(nums, len);
